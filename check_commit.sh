@@ -6,7 +6,7 @@ VALID_ACTIONS="Update|Refactor|Bug|Docs"
 # $1 can be file, or checks last commit
 
 git_log_commit_msg=$(git log -1 --format="%s")
-file_commit_msg=$([[ -n "${1:-""}" ]] && cat $1)
+file_commit_msg=$([[ -n "${1:-""}" ]] && cat "$1")
 commit_msg="${file_commit_msg:-$git_log_commit_msg}"
 
 echo "Checking: \"$commit_msg\""
@@ -28,7 +28,7 @@ if ! echo "$commit_msg" | grep -qP "^\[($VALID_MODULES)(-($VALID_MODULES))*\] \(
     else
         # Extract and validate module(s)
         module_part=$(echo "$commit_msg" | grep -oP '(?<=\[)[^\]]+(?=\])')
-        IFS='-' read -ra modules <<< "$module_part"
+        IFS='-' read -ra modules <<<"$module_part"
         for mod in "${modules[@]}"; do
             if ! echo "$mod" | grep -qP "^($VALID_MODULES)$"; then
                 errors+=("Unknown module '$mod'. Valid modules: INFRA, API, DB, AUTH, APP, ADMIN")

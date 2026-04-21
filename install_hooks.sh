@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 ln -sf "${1:-$PWD}/check_commit.sh" .git/hooks/commit-msg
 
