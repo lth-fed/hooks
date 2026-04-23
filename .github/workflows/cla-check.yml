@@ -1,0 +1,50 @@
+name: CLA Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: PR number to re-check after signing
+        required: true
+        type: string
+
+jobs:
+  cla-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Resolve PR author
+        id: resolve
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            AUTHOR=$(gh api repos/${{ github.repository }}/pulls/${{ inputs.pr_number }} --jq '.user.login')
+          else
+            AUTHOR="${{ github.event.pull_request.user.login }}"
+          fi
+          echo "author=$AUTHOR" >> "$GITHUB_OUTPUT"
+
+      - name: Check CLA signature
+        run: |
+          AUTHOR="${{ steps.resolve.outputs.author }}"
+          echo "Checking CLA for $AUTHOR"
+
+          if [ ! -f .github/cla-signatures.json ]; then
+            echo "No signature file found"
+            exit 1
+          fi
+
+          if jq -e --arg user "$AUTHOR" 'index($user) != null' .github/cla-signatures.json > /dev/null; then
+            echo "CLA signed"
+          else
+            echo "CLA NOT signed by $AUTHOR — comment /sign-cla on the PR to sign"
+            exit 1
+          fi
