@@ -17,9 +17,6 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
       - name: Resolve PR author
         id: resolve
         env:
@@ -33,16 +30,16 @@ jobs:
           echo "author=$AUTHOR" >> "$GITHUB_OUTPUT"
 
       - name: Check CLA signature
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           AUTHOR="${{ steps.resolve.outputs.author }}"
           echo "Checking CLA for $AUTHOR"
 
-          if [ ! -f .github/cla-signatures.json ]; then
-            echo "No signature file found"
-            exit 1
-          fi
+          SIGNATURES=$(gh api "repos/${{ github.repository }}/contents/.github/cla-signatures.json" \
+            --jq '.content' | base64 -d)
 
-          if jq -e --arg user "$AUTHOR" 'index($user) != null' .github/cla-signatures.json > /dev/null; then
+          if echo "$SIGNATURES" | jq -e --arg user "$AUTHOR" 'index($user) != null' > /dev/null; then
             echo "CLA signed"
           else
             echo "CLA NOT signed by $AUTHOR — comment /sign-cla on the PR to sign"

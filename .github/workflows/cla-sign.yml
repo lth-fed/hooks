@@ -6,7 +6,7 @@ on:
 
 jobs:
   sign:
-    if: contains(github.event.comment.body, '/sign-cla') && github.event.issue.pull_request != null
+    if: contains(github.event.comment.body, '/sign-cla') && github.event.issue.pull_request.url != ''
     runs-on: ubuntu-latest
     permissions:
       contents: write
