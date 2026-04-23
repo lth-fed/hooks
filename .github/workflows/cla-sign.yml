@@ -44,8 +44,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR_SHA=$(gh api "repos/${{ github.repository }}/pulls/${{ github.event.issue.number }}" \
-            --jq '.head.sha')
+          PR_SHA=$(gh api "${{ github.event.issue.pull_request.url }}" --jq '.head.sha')
           SUITE_ID=$(gh api "repos/${{ github.repository }}/commits/$PR_SHA/check-suites" \
             --jq '[.check_suites[] | select(.app.slug == "github-actions")][0].id')
           gh api "repos/${{ github.repository }}/check-suites/$SUITE_ID/reattempt" --method POST
