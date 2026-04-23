@@ -3,12 +3,6 @@ name: CLA Check
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: PR number to re-check after signing
-        required: true
-        type: string
 
 jobs:
   cla-check:
@@ -18,23 +12,11 @@ jobs:
       pull-requests: read
 
     steps:
-      - name: Resolve PR author
-        id: resolve
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            AUTHOR=$(gh api repos/${{ github.repository }}/pulls/${{ inputs.pr_number }} --jq '.user.login')
-          else
-            AUTHOR="${{ github.event.pull_request.user.login }}"
-          fi
-          echo "author=$AUTHOR" >> "$GITHUB_OUTPUT"
-
       - name: Check CLA signature
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          AUTHOR="${{ steps.resolve.outputs.author }}"
+          AUTHOR="${{ github.event.pull_request.user.login }}"
           echo "Checking CLA for $AUTHOR"
 
           SIGNATURES=$(gh api "repos/${{ github.repository }}/contents/.github/cla-signatures.json" \
