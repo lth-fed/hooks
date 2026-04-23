@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
+      pull-requests: write
 
     steps:
       - name: Check CLA signature
@@ -17,6 +17,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           AUTHOR="${{ github.event.pull_request.user.login }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
           echo "Checking CLA for $AUTHOR"
 
           SIGNATURES=$(gh api "repos/${{ github.repository }}/contents/.github/cla-signatures.json" \
@@ -24,7 +25,26 @@ jobs:
 
           if echo "$SIGNATURES" | jq -e --arg user "$AUTHOR" 'index($user) != null' > /dev/null; then
             echo "CLA signed"
-          else
-            echo "CLA NOT signed by $AUTHOR — comment /sign-cla on the PR to sign"
-            exit 1
+            exit 0
           fi
+
+          echo "CLA NOT signed by $AUTHOR"
+
+          ALREADY_COMMENTED=$(gh api "repos/${{ github.repository }}/issues/$PR_NUMBER/comments" \
+            --jq '[.[] | select(.user.login == "github-actions[bot]") | select(.body | contains("/sign-cla"))] | length')
+
+          if [ "$ALREADY_COMMENTED" = "0" ]; then
+            CLA=$(gh api "repos/${{ github.repository }}/contents/.github/CLA.md" \
+              --jq '.content' | base64 -d)
+            cat > /tmp/cla-comment.md << EOF
+          @$AUTHOR, please sign the Contributor License Agreement before this PR can be merged.
+
+          $CLA
+
+          ---
+          To sign, comment \`/sign-cla\` on this PR.
+          EOF
+            gh pr comment "$PR_NUMBER" --body-file /tmp/cla-comment.md
+          fi
+
+          exit 1
