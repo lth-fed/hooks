@@ -44,7 +44,7 @@ jobs:
           ---
           To sign, comment \`/sign-cla\` on this PR.
           EOF
-            gh pr comment "$PR_NUMBER" --body-file /tmp/cla-comment.md
+            gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body-file /tmp/cla-comment.md
           fi
 
           exit 1
