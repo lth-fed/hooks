@@ -1,0 +1,30 @@
+name: CLA Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  cla-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Check CLA signature
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+          echo "Checking CLA for $AUTHOR"
+
+          SIGNATURES=$(gh api "repos/${{ github.repository }}/contents/.github/cla-signatures.json" \
+            --jq '.content' | base64 -d)
+
+          if echo "$SIGNATURES" | jq -e --arg user "$AUTHOR" 'index($user) != null' > /dev/null; then
+            echo "CLA signed"
+          else
+            echo "CLA NOT signed by $AUTHOR — comment /sign-cla on the PR to sign"
+            exit 1
+          fi
