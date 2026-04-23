@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      checks: write
+      actions: write
       pull-requests: read
 
     steps:
@@ -46,6 +46,6 @@ jobs:
         run: |
           git fetch origin "refs/pull/${{ github.event.issue.number }}/head"
           PR_SHA=$(git rev-parse FETCH_HEAD)
-          SUITE_ID=$(gh api "repos/${{ github.repository }}/commits/$PR_SHA/check-suites" \
-            --jq '[.check_suites[] | select(.app.slug == "github-actions")][0].id')
-          gh api "repos/${{ github.repository }}/check-suites/$SUITE_ID/reattempt" --method POST
+          RUN_ID=$(gh api "repos/${{ github.repository }}/actions/workflows/cla-check.yml/runs?head_sha=$PR_SHA" \
+            --jq '.workflow_runs[0].id')
+          gh api "repos/${{ github.repository }}/actions/runs/$RUN_ID/rerun-failed-jobs" --method POST
