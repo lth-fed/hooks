@@ -34,17 +34,10 @@ jobs:
             --jq '[.[] | select(.user.login == "github-actions[bot]") | select(.body | contains("/sign-cla"))] | length')
 
           if [ "$ALREADY_COMMENTED" = "0" ]; then
-            CLA=$(gh api "repos/${{ github.repository }}/contents/.github/CLA.md" \
-              --jq '.content' | base64 -d)
-            cat > /tmp/cla-comment.md << EOF
-          @$AUTHOR, please sign the Contributor License Agreement before this PR can be merged.
+            gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body \
+              "@$AUTHOR, please read and sign the [Contributor License Agreement](https://github.com/lth-fed/docs/blob/main/agreements/CLA.md) before this PR can be merged.
 
-          $CLA
-
-          ---
-          To sign, comment \`/sign-cla\` on this PR.
-          EOF
-            gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body-file /tmp/cla-comment.md
+          To sign, comment \`/sign-cla\` on this PR."
           fi
 
           exit 1
