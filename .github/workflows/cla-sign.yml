@@ -37,7 +37,7 @@ jobs:
           git config user.name "cla-bot"
           git config user.email "cla-bot@users.noreply.github.com"
           git add .github/cla-signatures.json
-          git diff --cached --quiet || git commit -m "Add CLA signature for ${{ github.event.comment.user.login }}"
+          git diff --cached --quiet || git commit -m "[INFRA] (Update): Add CLA signature for ${{ github.event.comment.user.login }}"
           git push
 
       - name: Re-trigger CLA check
