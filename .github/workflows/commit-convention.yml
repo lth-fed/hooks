@@ -1,0 +1,34 @@
+name: Commit Convention
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-commits:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check commit messages
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+
+          tmpfile=$(mktemp)
+          trap 'rm -f "$tmpfile"' EXIT
+
+          failed=0
+          while IFS= read -r sha; do
+            git log -1 --format="%s" "$sha" > "$tmpfile"
+            if ! bash check_commit.sh "$tmpfile"; then
+              failed=1
+            fi
+          done < <(git log --format="%H" "$BASE..$HEAD")
+
+          exit $failed
