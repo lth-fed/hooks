@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4
@@ -16,19 +17,47 @@ jobs:
           fetch-depth: 0
 
       - name: Check commit messages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BASE="${{ github.event.pull_request.base.sha }}"
           HEAD="${{ github.event.pull_request.head.sha }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
 
           tmpfile=$(mktemp)
           trap 'rm -f "$tmpfile"' EXIT
 
           failed=0
+          rows=""
           while IFS= read -r sha; do
-            git log -1 --format="%s" "$sha" > "$tmpfile"
-            if ! bash check_commit.sh "$tmpfile"; then
+            short=$(git log -1 --format="%h" "$sha")
+            msg=$(git log -1 --format="%s" "$sha")
+            echo "$msg" > "$tmpfile"
+            if bash check_commit.sh "$tmpfile" > /dev/null 2>&1; then
+              rows="$rows"$'\n'"| \`$short\` | ✅ | \`$msg\` |"
+            else
+              rows="$rows"$'\n'"| \`$short\` | ❌ | \`$msg\` |"
               failed=1
             fi
           done < <(git log --format="%H" "$BASE..$HEAD")
+
+          if [ "$failed" = "1" ]; then
+            body="$(cat <<EOF
+          ### Commit Convention Check Failed
+
+          One or more commits do not follow the \`[MODULE] (Action): Message\` convention.
+
+          | Commit | Status | Message |
+          |--------|--------|---------|$rows
+
+          **Modules:** \`INFRA\`, \`API\`, \`DB\`, \`AUTH\`, \`APP\`, \`ADMIN\` (combine with \`-\` for multi-module)
+          **Actions:** \`Update\`, \`Refactor\`, \`Bug\`, \`Docs\`
+          **Example:** \`[API-DB] (Refactor): Extract shared error types into common module\`
+
+          See the [commit message docs](https://docs.teknologappen.se/commit-messages/) for more info.
+          EOF
+          )"
+            gh pr comment "$PR_NUMBER" --repo "${{ github.repository }}" --body "$body"
+          fi
 
           exit $failed
