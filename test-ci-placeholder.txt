@@ -1,3 +1,4 @@
 This file exists only to test the commit convention CI workflow.
 another line
 line 3
+line 4
