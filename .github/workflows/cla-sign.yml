@@ -3,6 +3,7 @@ name: CLA Sign
 on:
   issue_comment:
     types: [created]
+  workflow_call:
 
 jobs:
   sign:
