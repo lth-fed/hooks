@@ -3,6 +3,7 @@ name: CLA Check
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  workflow_call:
 
 jobs:
   cla-check:
