@@ -28,7 +28,7 @@ if ! echo "$commit_msg" | grep -qP "^\[($VALID_MODULES)(-($VALID_MODULES))*\] \(
     else
         # Extract and validate module(s)
         module_part=$(echo "$commit_msg" | grep -oP '(?<=\[)[^\]]+(?=\])')
-        IFS='-' read -ra modules <<<"$module_part"
+        IFS='-' read -ra modules <<< "$module_part"
         for mod in "${modules[@]}"; do
             if ! echo "$mod" | grep -qP "^($VALID_MODULES)$"; then
                 errors+=("Unknown module '$mod'. Valid modules: INFRA, API, DB, AUTH, APP, ADMIN")
