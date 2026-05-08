@@ -17,27 +17,27 @@ set -euo pipefail
 errors=()
 
 # Check overall format: [MODULE(s)] (Action): Message
-if ! echo "$commit_msg" | grep -qP "^\[($VALID_MODULES)(-($VALID_MODULES))*\] \(($VALID_ACTIONS)\): .+$"; then
+if ! grep -qP "^\[($VALID_MODULES)(-($VALID_MODULES))*\] \(($VALID_ACTIONS)\): .+$" <<< "$commit_msg"; then
     # Give specific feedback rather than just "invalid format"
-    if ! echo "$commit_msg" | grep -qP "^\["; then
+    if ! grep -qP "^\[" <<< "$commit_msg"; then
         errors+=("Missing module prefix. Expected format: [MODULE] (Action): Message")
-    elif ! echo "$commit_msg" | grep -qP ":"; then
+    elif ! grep -qP ":" <<< "$commit_msg"; then
         errors+=("Missing colon. Expected format: [MODULE] (Action): Message")
-    elif ! echo "$commit_msg" | grep -qP "^\[[A-Z-]+\]"; then
+    elif ! grep -qP "^\[[A-Z-]+\]" <<< "$commit_msg"; then
         errors+=("Module section malformed. Expected: [MODULE] or [MODULE1-MODULE2]")
     else
         # Extract and validate module(s)
-        module_part=$(echo "$commit_msg" | grep -oP '(?<=\[)[^\]]+(?=\])')
+        module_part=$(grep -oP '(?<=\[)[^\]]+(?=\])' <<< "$commit_msg")
         IFS='-' read -ra modules <<< "$module_part"
         for mod in "${modules[@]}"; do
-            if ! echo "$mod" | grep -qP "^($VALID_MODULES)$"; then
+            if ! grep -qP "^($VALID_MODULES)$" <<< "$mod"; then
                 errors+=("Unknown module '$mod'. Valid modules: INFRA, API, DB, AUTH, APP, ADMIN")
             fi
         done
 
         # Extract and validate action
-        if ! echo "$commit_msg" | grep -qP "\] \(($VALID_ACTIONS)\): "; then
-            action_part=$(echo "$commit_msg" | grep -oP '(?<=\() [^)]+(?=\))' | head -1 || echo "")
+        if ! grep -qP "\] \(($VALID_ACTIONS)\): " <<< "$commit_msg"; then
+            action_part=$(grep -oP '(?<=\() [^)]+(?=\))' <<< "$commit_msg" | head -1 || echo "")
             if [[ -z "$action_part" ]]; then
                 errors+=("Missing or malformed action. Expected format: (Action) — one of: Update, Refactor, Bug, Docs")
             else
@@ -46,7 +46,7 @@ if ! echo "$commit_msg" | grep -qP "^\[($VALID_MODULES)(-($VALID_MODULES))*\] \(
         fi
 
         # Check message exists after ": "
-        if ! echo "$commit_msg" | grep -qP ":\s+\S+"; then
+        if ! grep -qP ":\s+\S+" <<< "$commit_msg"; then
             errors+=("Missing message after ': '")
         fi
     fi
